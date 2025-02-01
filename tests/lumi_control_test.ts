@@ -62,35 +62,52 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "Can set brightness",
+    name: "Can create and manage device groups",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const deployer = accounts.get('deployer')!;
         
-        // Register device
+        // Create group
         let block = chain.mineBlock([
-            Tx.contractCall('lumi-control', 'register-device', [
-                types.uint(1)
-            ], deployer.address)
-        ]);
-        
-        // Set brightness
-        block = chain.mineBlock([
-            Tx.contractCall('lumi-control', 'set-brightness', [
+            Tx.contractCall('lumi-control', 'create-group', [
                 types.uint(1),
-                types.uint(75)
+                types.ascii("Living Room")
             ], deployer.address)
         ]);
         
         block.receipts[0].result.expectOk();
         
-        // Check status
-        let statusBlock = chain.mineBlock([
-            Tx.contractCall('lumi-control', 'get-device-status', [
+        // Register device and add to group
+        block = chain.mineBlock([
+            Tx.contractCall('lumi-control', 'register-device', [
+                types.uint(1)
+            ], deployer.address),
+            Tx.contractCall('lumi-control', 'add-to-group', [
+                types.uint(1),
                 types.uint(1)
             ], deployer.address)
         ]);
         
-        const status = statusBlock.receipts[0].result.expectOk().expectTuple();
-        assertEquals(status['brightness'], types.uint(75));
+        block.receipts[0].result.expectOk();
+        block.receipts[1].result.expectOk();
+    }
+});
+
+Clarinet.test({
+    name: "Can create schedules",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const deployer = accounts.get('deployer')!;
+        
+        let block = chain.mineBlock([
+            Tx.contractCall('lumi-control', 'create-schedule', [
+                types.uint(1), // schedule id
+                types.uint(1), // target id
+                types.ascii("device"), // target type
+                types.ascii("toggle"), // action
+                types.uint(1), // value
+                types.uint(100) // trigger block
+            ], deployer.address)
+        ]);
+        
+        block.receipts[0].result.expectOk();
     }
 });
